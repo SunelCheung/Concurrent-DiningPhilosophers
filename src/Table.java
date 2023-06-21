@@ -58,4 +58,13 @@ public class Table {
     public ReentrantLock getRightFork(int seatNumber) {
         return forks[(seatNumber + 1) % forks.length];
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (Philosopher philosopher : philosophers) {
+            sb.append(philosopher == null ? "Empty" : philosopher).append("\t");
+        }
+        return sb.toString();
+    }
 }

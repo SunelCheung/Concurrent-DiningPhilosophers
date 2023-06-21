@@ -1,20 +1,24 @@
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Philosopher implements Runnable {
     enum state{
-        THINKING, HUNGRY, EATING, WAITING}
+        NONE, THINKING, HUNGRY, EATING, WAITING}
 
     private final String name;
-    private Lock leftFork;
-    private Lock rightFork;
+    private ReentrantLock leftFork;
+    private ReentrantLock rightFork;
     private int seat;
-    private state curState;
-
+    private state curState = state.NONE;
     public Future task;
 
     public Philosopher(String name) {
         this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return name + " " + curState + " " + (leftFork.isHeldByCurrentThread()?"L":" ") + seat + (rightFork.isHeldByCurrentThread()?"R":" ");
     }
 
     public void seat(Table table, int seat){
@@ -28,28 +32,30 @@ public class Philosopher implements Runnable {
         return name;
     }
 
-    private boolean isWaiting = false;
-
     public boolean isWaiting() {
-        return isWaiting;
+        return curState == state.WAITING;
     }
 
-    private boolean hasLeftFork = false;
-    private boolean hasRightFork = false;
+//    private AtomicBoolean hasLeftFork = new AtomicBoolean(false);
+//    private AtomicBoolean hasRightFork = new AtomicBoolean(false);
 
     @Override
     public void run() {
         try {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
+//            while(true){
                 think();
                 pickUpForks();
                 eat();
                 putDownForks();
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        finally {
             putDownForks();
-            isWaiting = false;
-//            Thread.currentThread().interrupt();
+            return;
+//            System.out.println("xxxxxxx");
         }
     }
 
@@ -59,36 +65,29 @@ public class Philosopher implements Runnable {
         Thread.sleep((long) (Math.random() * 10 * Main.millisecond));
     }
 
-    private void pickUpForks() {
-        isWaiting = true;
-        leftFork.lock();
-        hasLeftFork = true;
-        isWaiting = false;
-
-        try {
-            Thread.sleep(4 * Main.millisecond);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-
-        isWaiting = true;
-        rightFork.lock();
-        hasRightFork = true;
-        isWaiting = false;
+    private void pickUpForks() throws InterruptedException {
+        curState = state.WAITING;
+        leftFork.lockInterruptibly();
+//        hasLeftFork.set(true);
+        curState = state.HUNGRY;
+        Thread.sleep(4 * Main.millisecond);
+        curState = state.WAITING;
+        rightFork.lockInterruptibly();
+//        hasRightFork.set(true);
     }
 
-    public void putDownForks() {
-        if (hasLeftFork) {
+    public void putDownForks(){
+        if (leftFork.isHeldByCurrentThread()) {
             leftFork.unlock();
-            hasLeftFork = false;
         }
-        if (hasRightFork) {
+        if (leftFork.isHeldByCurrentThread()) {
             rightFork.unlock();
-            hasRightFork = false;
         }
+        curState = state.NONE;
     }
 
     private void eat() throws InterruptedException {
+        curState = state.EATING;
         System.out.println(name + " is eating");
         Thread.sleep((long) (Math.random() * 5 * Main.millisecond));
     }

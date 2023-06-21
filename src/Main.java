@@ -1,16 +1,16 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public final static int millisecond = 100;
+    public final static int millisecond = 10;
     private final static int numberOfTables = 5;
     private final static int numberOfSeats = 5;
     private final static List<Table> tables = new ArrayList<>();
     private static Philosopher lastMovedPhilosopher = null;
+//    private static Hashtable<Philosopher, Thread> threads = new Hashtable<>() ;
     private static ExecutorService executor;
+
     public static Random random = new Random();
 
     public static void startSimulation() {
@@ -21,9 +21,12 @@ public class Main {
 
         for (int i = 0; i < numberOfTables; i++) {
             for (int j = 0; j < numberOfSeats; j++) {
-                Philosopher philosopher = new Philosopher("Philosopher " + (char)('A' + i * 5 + j));
+                Philosopher philosopher = new Philosopher("Phi " + (char)('A' + i * 5 + j));
                 philosopher.seat(tables.get(i), j);
                 philosopher.task = executor.submit(philosopher);
+//                Thread thread = new Thread(philosopher);
+//                threads.put(philosopher, thread);
+//                thread.start();
             }
         }
         Long startTime = System.currentTimeMillis();
@@ -33,7 +36,6 @@ public class Main {
                     if (table.isDeadlocked()) {
                         if(table == tables.get(5)) {
                             System.out.println("The sixth table is deadlocked. The last philosopher to move was " + lastMovedPhilosopher.getName());
-                            executor.shutdownNow();
                             Long endTime = System.currentTimeMillis();
                             float elapsedTime = (endTime - startTime) / 1000;
                             System.out.println("The total elapsed Time is " + elapsedTime + "s");
@@ -41,20 +43,30 @@ public class Main {
                         }
 
                         Philosopher philosopher = table.getPhilosopher(random.nextInt(5));
-                        if(philosopher.task.cancel(true)){
+
+//                        threads.get(philosopher).interrupt();
+                        if(philosopher.task.cancel(true)) {
                             movePhilosopher(philosopher, table, tables.get(numberOfTables));
                         }
                         break;
                     }
+
+//                    if(table == tables.get(5)) {
+//                        System.out.println(table);
+//                    }
                 }
 
+
+//                if(lastMovedPhilosopher != null &&
+//                        threads.get(lastMovedPhilosopher).getState()==Thread.State.TERMINATED){
+//                }
                 Thread.sleep(millisecond);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         System.out.println("Unexpectedly exited");
-        executor.shutdownNow();
+        System.exit(0);
     }
 
     static void movePhilosopher(Philosopher philosopher, Table oldTable, Table newTable) {
@@ -69,7 +81,6 @@ public class Main {
         while (!newTable.isAvailable(seat));
         philosopher.seat(newTable, seat);
         lastMovedPhilosopher = philosopher;
-
         System.out.println("Moved " + philosopher.getName() + " to the sixth table");
         philosopher.task = executor.submit(philosopher);
     }
