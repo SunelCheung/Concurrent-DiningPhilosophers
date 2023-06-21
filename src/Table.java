@@ -62,8 +62,9 @@ public class Table {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (Philosopher philosopher : philosophers) {
-            sb.append(philosopher == null ? "Empty" : philosopher).append("\t");
+        for (int i = 0; i < forks.length; i++) {
+            sb.append(forks[i].isLocked()?"🔒":"🔑").append(forks[i].getQueueLength()).append(" ");
+            sb.append(philosophers.get(i) == null ? "Empty" : philosophers.get(i)).append("\t");
         }
         return sb.toString();
     }

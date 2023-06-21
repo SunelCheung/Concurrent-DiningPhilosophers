@@ -1,4 +1,5 @@
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Philosopher implements Runnable {
@@ -8,7 +9,7 @@ public class Philosopher implements Runnable {
     private final String name;
     private ReentrantLock leftFork;
     private ReentrantLock rightFork;
-    private int seat;
+//    private int seat;
     private state curState = state.NONE;
     public Future task;
 
@@ -18,13 +19,13 @@ public class Philosopher implements Runnable {
 
     @Override
     public String toString() {
-        return name + " " + curState + " " + (leftFork.isHeldByCurrentThread()?"L":" ") + seat + (rightFork.isHeldByCurrentThread()?"R":" ");
+        return name + " " + (hasLeftFork.get()?"🍴":" ") + curState + " " + (hasRightFork.get()?"🍴":" ");
     }
 
     public void seat(Table table, int seat){
         this.leftFork = table.getLeftFork(seat);
         this.rightFork = table.getRightFork(seat);
-        this.seat = seat;
+//        this.seat = seat;
         table.seatPhilosopher(this, seat);
     }
 
@@ -36,14 +37,13 @@ public class Philosopher implements Runnable {
         return curState == state.WAITING;
     }
 
-//    private AtomicBoolean hasLeftFork = new AtomicBoolean(false);
-//    private AtomicBoolean hasRightFork = new AtomicBoolean(false);
+    private AtomicBoolean hasLeftFork = new AtomicBoolean(false);
+    private AtomicBoolean hasRightFork = new AtomicBoolean(false);
 
     @Override
     public void run() {
         try {
             while (!Thread.currentThread().isInterrupted()) {
-//            while(true){
                 think();
                 pickUpForks();
                 eat();
@@ -55,7 +55,6 @@ public class Philosopher implements Runnable {
         finally {
             putDownForks();
             return;
-//            System.out.println("xxxxxxx");
         }
     }
 
@@ -68,21 +67,23 @@ public class Philosopher implements Runnable {
     private void pickUpForks() throws InterruptedException {
         curState = state.WAITING;
         leftFork.lockInterruptibly();
-//        hasLeftFork.set(true);
+        hasLeftFork.set(true);
         curState = state.HUNGRY;
         Thread.sleep(4 * Main.millisecond);
         curState = state.WAITING;
         rightFork.lockInterruptibly();
-//        hasRightFork.set(true);
+        hasRightFork.set(true);
     }
 
     public void putDownForks(){
         if (leftFork.isHeldByCurrentThread()) {
             leftFork.unlock();
         }
-        if (leftFork.isHeldByCurrentThread()) {
+        hasLeftFork.set(false);
+        if (rightFork.isHeldByCurrentThread()) {
             rightFork.unlock();
         }
+        hasRightFork.set(false);
         curState = state.NONE;
     }
 

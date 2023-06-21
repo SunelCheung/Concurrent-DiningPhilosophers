@@ -3,12 +3,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
-    public final static int millisecond = 10;
+    public final static int millisecond = 1000;
     private final static int numberOfTables = 5;
     private final static int numberOfSeats = 5;
     private final static List<Table> tables = new ArrayList<>();
     private static Philosopher lastMovedPhilosopher = null;
-//    private static Hashtable<Philosopher, Thread> threads = new Hashtable<>() ;
     private static ExecutorService executor;
 
     public static Random random = new Random();
@@ -21,12 +20,9 @@ public class Main {
 
         for (int i = 0; i < numberOfTables; i++) {
             for (int j = 0; j < numberOfSeats; j++) {
-                Philosopher philosopher = new Philosopher("Phi " + (char)('A' + i * 5 + j));
+                Philosopher philosopher = new Philosopher("Phi " + (char)('A' + i * numberOfSeats + j));
                 philosopher.seat(tables.get(i), j);
                 philosopher.task = executor.submit(philosopher);
-//                Thread thread = new Thread(philosopher);
-//                threads.put(philosopher, thread);
-//                thread.start();
             }
         }
         Long startTime = System.currentTimeMillis();
@@ -43,23 +39,19 @@ public class Main {
                         }
 
                         Philosopher philosopher = table.getPhilosopher(random.nextInt(5));
-
-//                        threads.get(philosopher).interrupt();
                         if(philosopher.task.cancel(true)) {
                             movePhilosopher(philosopher, table, tables.get(numberOfTables));
                         }
-                        break;
+                        else{
+                            System.out.println("Failed to cancel the task of " + philosopher.getName());
+                        }
                     }
 
-//                    if(table == tables.get(5)) {
+//                    if(table != tables.get(5))
 //                        System.out.println(table);
-//                    }
                 }
+//                System.out.println("");
 
-
-//                if(lastMovedPhilosopher != null &&
-//                        threads.get(lastMovedPhilosopher).getState()==Thread.State.TERMINATED){
-//                }
                 Thread.sleep(millisecond);
             }
         } catch (InterruptedException e) {
